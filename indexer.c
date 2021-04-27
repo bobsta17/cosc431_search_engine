@@ -15,6 +15,8 @@ void insert(char** dictionary, char* word, int index, int size) {
     for(j=size;j>index;j--) {
         dictionary[j] = dictionary[j-1];
     }
+    printf("%s at index %d\n", word, index);
+    dictionary[index] = (char *) malloc(sizeof(char) * 30);
     strcpy(dictionary[index], word);
 }
 
@@ -51,6 +53,7 @@ int main() {
     FILE *fp;
     char currentWord[30];
     int c, i, j, k, index, size;
+    int maximumAllocated = 0;
     int letterIndex = 0;
     int length;
     int docID=0;
@@ -63,6 +66,9 @@ int main() {
     int docDictionarySize = 0;
     int* indexes = (int*) malloc(sizeof(int) * initialSize);
     int* counts = (int*) malloc(sizeof(int) * initialSize);
+    int maxDictionarySize = initialSize;
+    int maxDocDictionarySize = initialSize;
+    int* postingLengths = (int*) malloc(sizeof(int) * initialSize);
 
     //going through the output of the parser
     for(;(c=getchar()) != EOF; letterIndex++) {
@@ -82,30 +88,40 @@ int main() {
                     
                     j = (j+1) * -1;
                     //reallocating size if dictionary is too small
-                    if(dictionarySize == (sizeof(dictionary)/sizeof(dictionary[0]))) {
-                        dictionary = (char **) realloc(dictionary, sizeof(char *) * dictionarySize*2);
-                        frequencies = (float **) realloc(frequencies, sizeof(float *) * dictionarySize*2);
-                        postings = (int **) realloc(postings, sizeof(int *) * dictionarySize*2);
+                    if(dictionarySize == maxDictionarySize) {
+                        maxDictionarySize*=2;
+                        dictionary = (char **) realloc(dictionary, sizeof(char *) * maxDictionarySize);
+                        frequencies = (float **) realloc(frequencies, sizeof(float *) * maxDictionarySize);
+                        postings = (int **) realloc(postings, sizeof(int *) * maxDictionarySize);
+                        postingLengths = (int *) realloc(postingLengths, sizeof(int) * maxDictionarySize);
                     }
                     //adding to dictionary
+                    printf("DictionarySize: %d, MaxSize: %d\n", dictionarySize, maxDictionarySize);
                     insert(dictionary, currentWord, j, dictionarySize);
                     //adjust frequencies and postings
                     for(k=dictionarySize;k>j;k--) {
                         frequencies[k] = frequencies[k-1];
                         postings[k] = postings[k-1];
+                        postingLengths[k] = postingLengths[k-1];
                     }
-                    //allocating size for positngs and frequencies of new word
+                    //allocating size for postings and frequencies of new word
                     frequencies[j] = (float*) malloc(sizeof(float));
                     postings[j] = (int*) malloc(sizeof(int));
                     postings[j][0] = -1;
+                    postingLengths[j] = 1;
                     dictionarySize++;
                 }
                 //adding to the docDictionary
                 //reallocating size if the docDictionary is too small
-                if(docDictionarySize == (sizeof(docDictionary)/sizeof(docDictionary[0]))) {
-                    docDictionary = (char **) realloc(docDictionary, sizeof(char *) * docDictionarySize*2);
-                    counts = (int *) realloc(counts, sizeof(int) * docDictionarySize*2);
-                    indexes = (int *) realloc(indexes, sizeof(int) * docDictionarySize*2);
+                if(docDictionarySize == maxDocDictionarySize) {
+                    maxDocDictionarySize *= 2;
+                    docDictionary = (char **) realloc(docDictionary, sizeof(char *) * maxDocDictionarySize);
+                    counts = (int *) realloc(counts, sizeof(int) * maxDocDictionarySize);
+                    indexes = (int *) realloc(indexes, sizeof(int) * maxDocDictionarySize);
+                }
+                printf("DocDictionarySize: %d, DocMaxSize: %d\n", docDictionarySize, maxDocDictionarySize);
+                if(docDictionarySize < maximumAllocated) {
+                    free(docDictionary[docDictionarySize]);
                 }
                 insert(docDictionary, currentWord, i, docDictionarySize);
                 //adjust counts and indexes
@@ -114,6 +130,9 @@ int main() {
                     indexes[k] = indexes[k-1];
                 }
                 docDictionarySize++;
+                if(docDictionarySize>maximumAllocated) {
+                    maximumAllocated = docDictionarySize;
+                }
                 //adding to counts and indexes
                 counts[i] = 1;
                 indexes[i] = j;
@@ -128,7 +147,7 @@ int main() {
             for(i=0;i<docDictionarySize;i++) {
                 //index stores the value of the index in the dictionary
                 index = indexes[i];
-                size = (sizeof(postings[index])/sizeof(int));
+                size = postingLengths[index];
                 for(j=0;j<size;j++) {
                     if(postings[index][j]==-1) {
                         break;
@@ -139,6 +158,7 @@ int main() {
                     postings[index] = (int *) realloc(postings[index], sizeof(int) * size*2);
                     frequencies[index] = (float *) realloc(frequencies[index], sizeof(float) * size*2);
                     size = 2*size;
+                    postingLengths[index] *= 2;
                 }
                 //append to frequencies and postings
                 postings[index][j] = docID;
@@ -156,14 +176,21 @@ int main() {
             currentWord[letterIndex] = (char) c;
         }
     }
-    /*
+    //freeing all allocatted memory
+    for(i=0;i<dictionarySize;i++) {
+        free(dictionary[i]);
+        free(frequencies[i]);
+        free(postings[i]);
+    }
     free(dictionary);
     free(frequencies);
     free(postings);
+    free(postingLengths);
+    for(i=0;i<maximumAllocated;i++) {
+        free(docDictionary[i]);
+    }
     free(docDictionary);
-    free(indexes);
     free(counts);
-    */
-    printf("Hello");
+    free(indexes);
     return 0;
 }
