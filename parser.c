@@ -2,13 +2,13 @@
     COSC431 Assignment 1: Parser
     Author: Max Edwards
     Date Created: 18/4/2020
-    Last Date Modified: 19/4/2020
+    Last Date Modified: 21/4/2020
 */
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 int main() {
-    char currentWord[50];
+    char currentWord[30];
     int c;
     int letterIndex = 0;
     int isTag = 0;
