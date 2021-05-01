@@ -62,9 +62,13 @@ int main() {
             if(letterIndex != 0) {
                 //if word ends in fullstop ignore fullstop
                 if(currentWord[letterIndex-1] == '.') {
-                    currentWord[letterIndex-1] = '\0';
+                    letterIndex--;
+                    while(letterIndex>=0 && currentWord[letterIndex] == '.') {
+                        currentWord[letterIndex] = '\0';
+                        letterIndex--;
+                    }
                     //checks if word is empty after removing fullstop
-                    if(letterIndex != 1) {
+                    if(letterIndex >= 0) {
                         printf("%s ", currentWord);
                     }
                 } else {
