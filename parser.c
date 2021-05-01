@@ -61,9 +61,9 @@ int main() {
             //checks word isnt empty
             if(letterIndex != 0) {
                 //if word ends in fullstop ignore fullstop
-                if(currentWord[letterIndex-1] == '.') {
+                if(currentWord[letterIndex-1] == '.' || currentWord[letterIndex-1] == '-') {
                     letterIndex--;
-                    while(letterIndex>=0 && currentWord[letterIndex] == '.') {
+                    while(letterIndex>=0 && (currentWord[letterIndex] == '.' || currentWord[letterIndex] == '-')) {
                         currentWord[letterIndex] = '\0';
                         letterIndex--;
                     }
