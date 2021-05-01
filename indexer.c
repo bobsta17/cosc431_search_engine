@@ -15,7 +15,7 @@ void insert(char** dictionary, char* word, int index, int size) {
     for(j=size;j>index;j--) {
         dictionary[j] = dictionary[j-1];
     }
-    printf("%s at index %d\n", word, index);
+    //printf("%s at index %d\n", word, index);
     dictionary[index] = (char *) malloc(sizeof(char) * 30);
     strcpy(dictionary[index], word);
 }
