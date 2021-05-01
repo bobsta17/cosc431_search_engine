@@ -55,7 +55,7 @@ int main() {
     int c, i, j, k, index, size;
     int maximumAllocated = 0;
     int letterIndex = 0;
-    int length;
+    int length=0;
     int docID=0;
     int initialSize = 100;
     int dictionarySize = 0;
@@ -69,6 +69,8 @@ int main() {
     int maxDictionarySize = initialSize;
     int maxDocDictionarySize = initialSize;
     int* postingLengths = (int*) malloc(sizeof(int) * initialSize);
+    char** docIDList = (char **) malloc(sizeof(char **) * initialSize);
+    int docIDCount = initialSize;
 
     //going through the output of the parser
     for(;(c=getchar()) != EOF; letterIndex++) {
@@ -76,6 +78,19 @@ int main() {
         //signals end of a word
         if(c == ' ') {
             currentWord[letterIndex] = '\0';
+            //Sorting out storing docID's separately
+            if(length==0) {
+                //reallocating space if its too small
+                if(docIDCount == docID) {
+                    docIDCount *=2;
+                    docIDList = (char **) realloc(docIDList, sizeof(char **) * initialSize);
+                }
+                docIDList[docID] = (char *) malloc(sizeof(char) * (strlen(currentWord)+1));
+                strcpy(docIDList[docID], currentWord);
+                letterIndex = -1;
+                length++;
+                continue;
+            }
             //binary search to find word in docDictionary
             i = searchDictionary(docDictionary, currentWord, docDictionarySize);
             letterIndex = -1;
@@ -96,7 +111,7 @@ int main() {
                         postingLengths = (int *) realloc(postingLengths, sizeof(int) * maxDictionarySize);
                     }
                     //adding to dictionary
-                    printf("DictionarySize: %d, MaxSize: %d\n", dictionarySize, maxDictionarySize);
+                    //printf("DictionarySize: %d, MaxSize: %d\n", dictionarySize, maxDictionarySize);
                     insert(dictionary, currentWord, j, dictionarySize);
                     //adjust frequencies and postings
                     for(k=dictionarySize;k>j;k--) {
@@ -109,6 +124,15 @@ int main() {
                     postings[j] = (int*) malloc(sizeof(int));
                     postings[j][0] = -1;
                     postingLengths[j] = 1;
+                    //adjusting indexes to match
+                    for(k=0;k<docDictionarySize;k++) {
+                        if(indexes[k] >= j) {
+                            for(;k<docDictionarySize;k++) {
+                                indexes[k]++;
+                            }
+                            break;
+                        }
+                    }
                     dictionarySize++;
                 }
                 //adding to the docDictionary
@@ -119,7 +143,7 @@ int main() {
                     counts = (int *) realloc(counts, sizeof(int) * maxDocDictionarySize);
                     indexes = (int *) realloc(indexes, sizeof(int) * maxDocDictionarySize);
                 }
-                printf("DocDictionarySize: %d, DocMaxSize: %d\n", docDictionarySize, maxDocDictionarySize);
+                //printf("DocDictionarySize: %d, DocMaxSize: %d\n", docDictionarySize, maxDocDictionarySize);
                 if(docDictionarySize < maximumAllocated) {
                     free(docDictionary[docDictionarySize]);
                 }
@@ -141,10 +165,13 @@ int main() {
                 counts[i]++;
             }
             letterIndex = -1;
+            length++;
         //new line means new document
         } else if(c == '\n') {
             //updating frequencies and postings
             for(i=0;i<docDictionarySize;i++) {
+                //printf("Index: %d\n", indexes[i]);
+                //printf("%s: Count:%d Length:%d PostingLength:%d\n", docDictionary[i], counts[i], length, postingLengths[index]);
                 //index stores the value of the index in the dictionary
                 index = indexes[i];
                 size = postingLengths[index];
@@ -168,15 +195,32 @@ int main() {
                 frequencies[index][j] = ((float) counts[i]) / ((float) length);
             }
             docDictionarySize = 0;
-            printf("%d\n", docID);
+            //printf("%d\n", docID);
             docID++;
             letterIndex = -1;
+            length = 0;
         } else {
             //append letter to currentWord
             currentWord[letterIndex] = (char) c;
         }
     }
+    
+    for(i=0;i<dictionarySize;i++) {
+        printf("%s: ", dictionary[i]);
+        for(j=0;j<postingLengths[i];j++) {
+            if(postings[i][j]==-1) {
+                break;
+            }
+            printf("(%d, %.5f) ",postings[i][j], frequencies[i][j]); 
+        }
+        printf("\n");
+    }
+    
     //freeing all allocatted memory
+    for(i=0;i<docID;i++) {
+        free(docIDList[i]);
+    }
+    free(docIDList);
     for(i=0;i<dictionarySize;i++) {
         free(dictionary[i]);
         free(frequencies[i]);
